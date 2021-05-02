@@ -85,7 +85,7 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 			return err
 		}
 
-		// TODO
+		// TODO Update Money w/o being trapped in deadlocks
 		// result.FromAccount, err = q.UpdateAccount(ctx, UpdateAccountParams{
 		// 	ID: arg.FromAccountID,
 

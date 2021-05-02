@@ -68,6 +68,9 @@ func TestTranferTx(t *testing.T) {
 		_, err = store.GetEntry(context.Background(), toEntry.ID)
 		require.NoError(t, err) 
 
+		// TODO Test Transfer
+
+		// TODO Clean up for concurrent test
 		// require.Equal(t, result.FromAccount.ID, account1.ID)
 		// require.Equal(t, result.ToAccount.ID, account2.ID)
 		// require.Equal(t, result.ToEntry.AccountID, account2.ID)
