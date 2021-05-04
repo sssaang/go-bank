@@ -83,7 +83,7 @@ func TestTranferTx(t *testing.T) {
 		diff1 := account1.Balance - fromAccount.Balance
 		diff2 := toAccount.Balance - account2.Balance 
 		require.Equal(t, diff1, diff2)
-		require.Greater(t, diff1, 0)
+		require.True(t, diff1 > 0)
 		require.True(t, diff1 % amount == 0)
 
 		k := int(diff1 / amount)
