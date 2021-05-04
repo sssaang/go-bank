@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/sssaang/simplebank/db/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +14,7 @@ func TestTranferTx(t *testing.T) {
 	account2 := CreateRandomAccount(t)
 
 	n := 5
-	amount := util.RandomInt(0, account1.Balance)
+	amount := 10
 
 	errs := make(chan error)
 	results := make(chan TransferTxResult)
@@ -25,7 +24,7 @@ func TestTranferTx(t *testing.T) {
 			result, err := store.TransferTx(context.Background(), TransferTxParams{
 				FromAccountID: account1.ID,
 				ToAccountID: account2.ID,
-				Amount: amount,
+				Amount: int64(amount),
 			})
 
 			errs <-err
