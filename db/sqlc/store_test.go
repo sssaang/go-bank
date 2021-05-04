@@ -13,8 +13,10 @@ func TestTranferTx(t *testing.T) {
 	account1 := CreateRandomAccount(t)
 	account2 := CreateRandomAccount(t)
 
+	t.Logf(">>>>> Before Transaction Account1: %d Account2: %d\n", account1.Balance, account2.Balance)
+
 	n := 5
-	amount := 10
+	amount := int64(10)
 
 	errs := make(chan error)
 	results := make(chan TransferTxResult)
@@ -24,14 +26,15 @@ func TestTranferTx(t *testing.T) {
 			result, err := store.TransferTx(context.Background(), TransferTxParams{
 				FromAccountID: account1.ID,
 				ToAccountID: account2.ID,
-				Amount: int64(amount),
+				Amount: amount,
 			})
 
 			errs <-err
 			results <-result
 		}()
 	}
-
+ 
+	existed := make(map[int] bool)
 	for i := 0; i < n; i++ {
 		err := <-errs
 		require.NoError(t, err)
@@ -67,12 +70,41 @@ func TestTranferTx(t *testing.T) {
 		_, err = store.GetEntry(context.Background(), toEntry.ID)
 		require.NoError(t, err) 
 
-		// TODO Test Transfer
+		fromAccount := result.FromAccount
+		require.NotEmpty(t, fromAccount)
+		require.Equal(t, fromAccount.ID, account1.ID)
+
+		toAccount := result.ToAccount
+		require.NotEmpty(t, toAccount)
+		require.Equal(t, toAccount.ID, account2.ID)
+
+		t.Logf(">>>>> After Transaction %d Account1: %d Account2: %d\n", i, fromAccount.Balance, toAccount.Balance)
+
+		diff1 := account1.Balance - fromAccount.Balance
+		diff2 := toAccount.Balance - account2.Balance 
+		require.Equal(t, diff1, diff2)
+		require.Greater(t, diff1, 0)
+		require.True(t, diff1 % amount == 0)
+
+		k := int(diff1 / amount)
+		require.True(t, k >= 1 && k <= n)
+		require.NotContains(t, existed, k)
+		existed[k] = true
 
 		// TODO Clean up for concurrent test
 		// require.Equal(t, result.FromAccount.ID, account1.ID)
 		// require.Equal(t, result.ToAccount.ID, account2.ID)
 		// require.Equal(t, result.ToEntry.AccountID, account2.ID)
 	}
+	updatedAccount1, err := testQueries.GetAccount(context.Background(), account1.ID)	
+	require.NoError(t, err)
+	require.NotEmpty(t, updatedAccount1)
 
+	updatedAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)	
+	require.NoError(t, err)
+	require.NotEmpty(t, updatedAccount2)
+
+	t.Logf(">>>>> After all %d Transactions Account1: %d Account2: %d\n", n, updatedAccount1.Balance, updatedAccount2.Balance)
+	require.Equal(t, updatedAccount1.Balance, account1.Balance - amount * int64(n))
+	require.Equal(t, updatedAccount2.Balance, account2.Balance + amount * int64(n))
 }
