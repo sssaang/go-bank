@@ -92,9 +92,7 @@ func TestTranferTx(t *testing.T) {
 		existed[k] = true
 
 		// TODO Clean up for concurrent test
-		// require.Equal(t, result.FromAccount.ID, account1.ID)
-		// require.Equal(t, result.ToAccount.ID, account2.ID)
-		// require.Equal(t, result.ToEntry.AccountID, account2.ID)
+		
 	}
 	updatedAccount1, err := testQueries.GetAccount(context.Background(), account1.ID)	
 	require.NoError(t, err)
