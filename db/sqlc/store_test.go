@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTranferTx(t *testing.T) {
+func TestFiveConcurrentTranferTx(t *testing.T) {
 	store := NewStore(testDB)
 
 	account1 := CreateRandomAccount(t)
