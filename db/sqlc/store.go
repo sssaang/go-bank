@@ -86,19 +86,8 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		}
 
 		// TODO Update Money w/o being trapped in deadlocks
-
-		result.FromAccount, err = q.AddAccountBalance(ctx, AddAccountBalanceParams {
-			ID: arg.FromAccountID,
-			Amount: -arg.Amount,
-		})
-		if err != nil {
-			return err
-		}
-
-		result.ToAccount, err = q.AddAccountBalance(ctx, AddAccountBalanceParams {
-			ID: arg.ToAccountID,
-			Amount: arg.Amount,
-		})
+		result.FromAccount, result.ToAccount, err = TransferMoney(ctx, q, arg.FromAccountID, arg.ToAccountID, arg.Amount)
+		
 		if err != nil {
 			return err
 		}
@@ -107,4 +96,47 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 	})
 
 	return result, err
+}
+
+func TransferMoney(
+	ctx context.Context,
+	q *Queries,
+	fromAccountID int64,
+	toAccountID int64,
+	amount int64,
+) (fromAccount Account, toAccount Account, err error) {
+
+	if fromAccountID < toAccountID {
+		fromAccount, err = q.AddAccountBalance(ctx, AddAccountBalanceParams {
+			ID: fromAccountID,
+			Amount: -amount,
+		})
+
+		if err != nil {
+			return 
+		}
+
+		toAccount, err = q.AddAccountBalance(ctx, AddAccountBalanceParams {
+			ID: toAccountID,
+			Amount: amount,
+		}) 
+
+	} else {
+		toAccount, err = q.AddAccountBalance(ctx, AddAccountBalanceParams {
+			ID: toAccountID,
+			Amount: amount,
+		})
+
+		if err != nil {
+			return 
+		}
+
+		fromAccount, err = q.AddAccountBalance(ctx, AddAccountBalanceParams {
+			ID: fromAccountID,
+			Amount: -amount,
+		})
+  
+	}	
+
+	return
 }
