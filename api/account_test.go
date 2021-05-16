@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -38,6 +39,19 @@ func TestGetAccountAPI(t *testing.T) {
 				checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 					require.Equal(t, http.StatusOK, recorder.Code)
 					requireBodyMatchAccount(t, recorder.Body, account)
+				},
+			},
+			{
+				name: "Get an account that does not exist",
+				accountID: account.ID,
+				buildStubs: func(store *testdb.MockStore) {
+					store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Eq(account.ID)).
+					Times(1).
+					Return(db.Account{}, sql.ErrNoRows)
+				},
+				checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+					require.Equal(t, http.StatusNotFound, recorder.Code)
 				},
 			},
 	}
