@@ -15,7 +15,7 @@ func RandomInt(min, max int64) int64 {
 }
 
 func RandomOwner() string {
-	names := []string{"Julie", "James", "Tom", "Amy", "Claire", "Alex", "Gene", "Joseph", "Tim"}
+	names := []string{"Peter", "Hudson", "Lillian", "Thomson", "Nicola", "Robertson", "Oliver", "May", "Matt", "Roberts", "Warren", "Forsyth", "Sophie", "James", "Sam", "Johnston", "Amy", "Poole", "Adam", "Duncan", "Zoe", "Alsop", "Tracey", "Welch", "Keith", "Gill", "Emma", "Arnold", "Evan", "Miller", "Joseph", "Greene", "Sean", "Reid", "Ruth", "Duncan", "Dorothy", "Poole", "Cameron", "Morgan", "Jake", "Ellison", "Luke", "Cornish", "Sophie", "Chapman", "Jane", "Grant", "Piers", "Burgess", "Ryan", "Bower", "Dan", "MacLeod", "Megan", "Miller", "Isaac", "Butler", "Peter", "Watson", "Owen", "Lyman", "Mary", "Davidson", "Gavin", "Knox", "Dan", "Wilkins", "Owen", "White", "Paul", "Graham", "Andrea", "Dickens", "Leonard", "Dickens", "Carolyn", "Piper", "Caroline", "Sanderson", "David", "Arnold", "Anthony", "Henderson", "Charles", "Blake", "Joseph", "Springer", "Cameron", "Bower", "Liam", "Walker", "Ruth", "Burgess", "Katherine", "MacDonald", "Adam", "Davies", "Maria", "Morrison", "Christopher", "Scott", "Deirdre", "Peake", "Robert", "Edmunds", "Gavin", "Rutherford", "Amelia", "Peters", "Audrey", "Morrison", "Evan", "Smith", "Benjamin", "Martin", "Alan", "Mitchell", "Sam", "Young", "Dan", "Hunter", "Yvonne", "Miller", "Robert", "Payne", "Sophie", "Alsop", "Rachel", "Allan", "Vanessa", "Rutherford", "Amelia", "Sanderson", "Lauren", "Cornish", "Carolyn", "Churchill", "Molly", "Powell", "Sean", "Wright", "Keith", "Mitchell", "Andrea", "Dyer", "Jane", "Langdon", "Dylan", "Forsyth", "Diane", "Langdon"}
 	return names[rand.Intn(len(names))]
 }
 
@@ -28,6 +28,8 @@ func RandomCurrency() string {
 	return currencies[rand.Intn(len(currencies))]
 }
 
-func RandomEmail(name string) string {
-	return fmt.Sprintf("%s@email.com", name)
+func RandomEmail() string {
+	name := RandomOwner()
+	number := RandomInt(1, 10000)
+	return fmt.Sprintf("%s%d@email.com", name, number)
 }

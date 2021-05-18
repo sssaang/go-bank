@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 func createRandomUser(t *testing.T) User {
-	username := util.RandomOwner()
+	username := util.RandomEmail()
 	arg := CreateUserParams{
 		Username: username,
 		HashedPassword: "pw",
 		FullName: username,
-		Email: util.RandomEmail(username),
+		Email: util.RandomEmail(),
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), arg)
