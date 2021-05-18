@@ -7,7 +7,7 @@ import (
 	"github.com/sssaang/simplebank/db/util"
 	"github.com/stretchr/testify/require"
 )
-func CreateRandomUser(t *testing.T) User {
+func createRandomUser(t *testing.T) User {
 	username := util.RandomOwner()
 	arg := CreateUserParams{
 		Username: username,
@@ -33,11 +33,11 @@ func CreateRandomUser(t *testing.T) User {
 }
 
 func TestCreateUser(t *testing.T) {
-	CreateRandomUser(t)
+	createRandomUser(t)
 }
 
 func TestGetUser(t *testing.T) {
-	userCreated := CreateRandomUser(t)
+	userCreated := createRandomUser(t)
 	userFetched, err := testQueries.GetUser(context.Background(), userCreated.Username)
 
 	require.NoError(t, err)
