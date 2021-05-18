@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -21,5 +22,13 @@ func TestRandomOwner(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		randName := RandomOwner()
 		require.Contains(t, names, randName)
+	}
+}
+
+func TestRandomEmail(t *testing.T) {
+	for i := 0; i< 100; i++ {
+		name := RandomOwner()
+		randEmail := RandomEmail(name)
+		require.Equal(t, fmt.Sprintf("%s@email.com", name), randEmail)
 	}
 }
