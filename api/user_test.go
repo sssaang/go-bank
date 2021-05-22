@@ -218,6 +218,32 @@ func TestGetUserAPI(t *testing.T) {
 				requireBodyMatchUser(t, recorder.Body, user)
 			},
 		},
+		{
+			name: "Get a non-existent user",
+			username: "non-existent user",
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				GetUser(gomock.Any(), gomock.Any()).
+				Times(1).
+				Return(db.User{}, sql.ErrNoRows)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name: "Internal Error",
+			username: user.Username,
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				GetUser(gomock.Any(), gomock.Eq(user.Username)).
+				Times(1).
+				Return(db.User{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
