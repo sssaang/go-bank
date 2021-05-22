@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	db "github.com/sssaang/simplebank/db/sqlc"
 	testdb "github.com/sssaang/simplebank/db/test"
@@ -17,9 +18,68 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCreateAccountAPI(t *testing.T) {
+	user, _ := randomUser(t)
+	account := randomAccount(user.Username)
+
+	testCases := []struct {
+		name string
+		body gin.H
+		buildStubs func(store *testdb.MockStore)
+		checkResponse func(recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "Create an account",
+			body: gin.H{
+				"owner": account.Owner,
+				"currency": account.Currency,
+				"balance": account.Balance,
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				arg := db.CreateAccountParams{
+					Owner: account.Owner,
+					Currency: account.Currency,
+				}
+				store.EXPECT().
+				CreateAccount(gomock.Any(), gomock.Eq(arg)).
+				Times(1).
+				Return(account, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusCreated, recorder.Code)
+				requireBodyMatchAccount(t, recorder.Body, account)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := testdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
+
+			server := NewServer(store)
+			recorder := httptest.NewRecorder()
+
+			// Marshal body data to JSON
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			request, err := http.NewRequest(http.MethodPost, "/account", bytes.NewReader(data))
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
 
 func TestGetAccountAPI(t *testing.T) {
-	account := randomAccount()
+	user, _ := randomUser(t)
+	account := randomAccount(user.Username)
 
 	testCases := []struct {
 		name string
@@ -104,10 +164,10 @@ func TestGetAccountAPI(t *testing.T) {
 	}
 }
 
-func randomAccount() db.Account {
+func randomAccount(username string) db.Account {
 	return db.Account {
 		ID: util.RandomInt(1, 10000),
-		Owner: util.RandomOwner(),
+		Owner: username,
 		Balance: util.RandomMoney(),
 		Currency: util.RandomCurrency(),
 	}
