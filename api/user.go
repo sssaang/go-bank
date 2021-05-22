@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -33,6 +34,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	fmt.Printf("from user.go %s", req.Password)
 
 	hashedPassword, hashErr := util.HashPassword(req.Password)
 	if hashErr != nil {
@@ -67,7 +69,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		PasswordChangedAt: user.PasswordChangedAt,
 	}
 
-	ctx.JSON(http.StatusOK, res)
+	ctx.JSON(http.StatusCreated, res)
 }
 
 type getUserRequest struct {
