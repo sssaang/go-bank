@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -112,6 +113,24 @@ func TestCreateUserAPI(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
+			name: "Internal Error",
+			body: gin.H{
+				"username": user.Username,
+				"password": password,
+				"full_name": user.FullName,
+				"email": user.Email,
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				CreateUser(gomock.Any(), gomock.Any()).
+				Times(1).
+				Return(db.User{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 	}
