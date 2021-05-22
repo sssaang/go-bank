@@ -195,6 +195,52 @@ func TestCreateUserAPI(t *testing.T) {
 	}
 }
 
+func TestGetUserAPI(t *testing.T) {
+	user, _ := randomUser(t)
+
+	testCases := []struct {
+		name string
+		username string
+		buildStubs func(store *testdb.MockStore)
+		checkResponse func(recorder *httptest.ResponseRecorder)	
+	}{
+		{
+			name: "Get an existing user",
+			username: user.Username,
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				GetUser(gomock.Any(), gomock.Eq(user.Username)).
+				Times(1).
+				Return(user, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchUser(t, recorder.Body, user)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := testdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
+
+			server := NewServer(store)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("/user/%s", tc.username)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
 func randomUser(t *testing.T) (user db.User, password string) {
 	username := util.RandomEmail()
 	password = util.RandomString(10)

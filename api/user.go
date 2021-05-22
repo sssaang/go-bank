@@ -74,10 +74,6 @@ type getUserRequest struct {
 	Username string `uri:"username" binding:"required"`
 }
 
-type getUserResponse struct {
-	Username string `uri:"username" binding:"required"`
-}
-
 func (server *Server) getUser(ctx *gin.Context) {
 	var req getUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
