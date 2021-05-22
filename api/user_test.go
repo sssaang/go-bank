@@ -24,7 +24,7 @@ func TestCreateUserAPI(t *testing.T) {
 		body gin.H
 		buildStubs func(store *testdb.MockStore)
 		checkResponse func(recorder *httptest.ResponseRecorder)
-	} {
+	}{
 		{
 			name: "Create an user",
 			body: gin.H{
@@ -42,6 +42,57 @@ func TestCreateUserAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusCreated, recorder.Code)
 				requireBodyMatchUser(t, recorder.Body, user)
+			},
+		},
+		{
+			name: "Invalid Username",
+			body: gin.H{
+				"username": "invalid",
+				"password": password,
+				"full_name": user.FullName,
+				"email": user.Email,
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				CreateUser(gomock.Any(), gomock.Any()).
+				Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "Invalid Email",
+			body: gin.H{
+				"username": user.Username,
+				"password": password,
+				"full_name": user.FullName,
+				"email": "invalidemail",
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				CreateUser(gomock.Any(), gomock.Any()).
+				Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "Too short password",
+			body: gin.H{
+				"username": user.Username,
+				"password": "1234",
+				"full_name": user.FullName,
+				"email": user.Email,
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				CreateUser(gomock.Any(), gomock.Any()).
+				Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 	}
