@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
+	"github.com/lib/pq"
 	db "github.com/sssaang/simplebank/db/sqlc"
 	testdb "github.com/sssaang/simplebank/db/test"
 	"github.com/sssaang/simplebank/db/util"
@@ -48,6 +49,56 @@ func TestCreateAccountAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusCreated, recorder.Code)
 				requireBodyMatchAccount(t, recorder.Body, account)
+			},
+		},
+		{
+			name: "Non-existent user",
+			body: gin.H {
+				"owner": "non-existent user",
+				"currency": account.Currency,
+				"balance": account.Balance,
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				CreateAccount(gomock.Any(), gomock.Any()).
+				Times(1).
+				Return(db.Account{}, &pq.Error{Code: "23503"})
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
+			name: "Invalid Currency",
+			body: gin.H {
+				"owner": account.Owner,
+				"currency": "invalid currency",
+				"balance": account.Balance,
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				CreateAccount(gomock.Any(), gomock.Any()).
+				Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "Internal Error",
+			body: gin.H{
+				"owner": account.Owner,
+				"currency": account.Currency,
+				"balance": account.Balance,
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				CreateAccount(gomock.Any(), gomock.Any()).
+				Times(1).
+				Return(db.Account{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 	}
