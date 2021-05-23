@@ -1,6 +1,11 @@
 package token
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
+)
 
 const MinSecretLength = 32
 
@@ -17,3 +22,18 @@ func NewJWTManager(secret string) (TokenManager, error) {
 		Secret: secret,
 	}, nil
 }
+
+func (manager JWTManager) CreateToken(username string, duration time.Duration) (string, error) {
+	payload, err := NewPayload(username, duration)
+	if err != nil {
+		return "", err
+	}
+
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodES256, payload)
+	return jwtToken.SignedString([]byte(manager.Secret))
+}
+
+func (manager JWTManager) VerifyToken(token string) (*Payload, error) {
+	return &Payload{}, nil
+}
+
