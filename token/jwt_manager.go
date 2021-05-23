@@ -24,17 +24,17 @@ func NewJWTManager(secret string) (TokenManager, error) {
 	}, nil
 }
 
-func (manager JWTManager) CreateToken(username string, duration time.Duration) (string, error) {
+func (manager *JWTManager) CreateToken(username string, duration time.Duration) (string, error) {
 	payload, err := NewPayload(username, duration)
 	if err != nil {
 		return "", err
 	}
 
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodES256, payload)
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
 	return jwtToken.SignedString([]byte(manager.Secret))
 }
 
-func (manager JWTManager) VerifyToken(token string) (*Payload, error) {
+func (manager *JWTManager) VerifyToken(token string) (*Payload, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
