@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/sssaang/simplebank/db/util"
 	"github.com/stretchr/testify/require"
 )
@@ -43,5 +44,25 @@ func TestExpiredJWTToken(t *testing.T) {
 	payload, err := manager.VerifyToken(token)
 	require.Error(t, err)
 	require.EqualError(t, err, ErrExpiredToken.Error())
+	require.Nil(t, payload)
+}
+
+func TestInvalidJWTTokenAlgNone(t *testing.T) {
+	payload, err := NewPayload(util.RandomEmail(), time.Minute)
+	require.NoError(t, err)
+	require.NotEmpty(t, payload)
+
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodNone, payload)
+	token, err := jwtToken.SignedString(jwt.UnsafeAllowNoneSignatureType)
+	require.NoError(t, err)
+	require.NotEmpty(t, jwtToken)
+
+	manager, err := NewJWTManager(util.RandomString(32))
+	require.NoError(t, err)
+	require.NotEmpty(t, manager)
+
+	payload, err = manager.VerifyToken(token)
+	require.Error(t, err)
+	require.EqualError(t, err, ErrInvalidToken.Error())
 	require.Nil(t, payload)
 }
