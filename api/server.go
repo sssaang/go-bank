@@ -2,6 +2,8 @@ package api
 
 import (
 	"fmt"
+	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -9,6 +11,7 @@ import (
 	db "github.com/sssaang/simplebank/db/sqlc"
 	"github.com/sssaang/simplebank/db/util"
 	"github.com/sssaang/simplebank/token"
+	"github.com/stretchr/testify/require"
 )
 
 type Server struct {
@@ -16,6 +19,17 @@ type Server struct {
 	store  db.Store
 	tokenManager token.TokenManager
 	router *gin.Engine
+}
+
+func newTestSerer(t *testing.T, store db.Store) *Server {
+	config := util.Config {
+		PasetoSymmetricKey: util.RandomString(32),
+		AccessTokenDuration: time.Minute,
+	}
+
+	server, err := NewServer(config, store)
+	require.NoError(t, err)
+	return server
 }
 
 // NewServer creates a new HTTP server, setup routing and return the server
