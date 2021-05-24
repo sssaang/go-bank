@@ -21,7 +21,7 @@ type Server struct {
 	router *gin.Engine
 }
 
-func newTestSerer(t *testing.T, store db.Store) *Server {
+func NewTestServer(t *testing.T, store db.Store) *Server {
 	config := util.Config {
 		PasetoSymmetricKey: util.RandomString(32),
 		AccessTokenDuration: time.Minute,
@@ -56,7 +56,7 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 	router.GET("/account/:id", server.getAccount)
 	router.GET("/accounts", server.listAccounts)
 
-	router.POST("/transfer", server.createTransfer)
+	router.POST("/transfer", server.makeTransfer)
 
 	server.router = router
 	return server, nil

@@ -17,7 +17,7 @@ type transferRequest struct {
 	Currency string `json:"currency" binding:"required,currency"`
 }
 
-func (server *Server) createTransfer(ctx *gin.Context) {
+func (server *Server) makeTransfer(ctx *gin.Context) {
 	var req transferRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -59,7 +59,7 @@ func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency s
 	}
 
 	if account.Currency != currency {
-		err := fmt.Errorf("Account [%d] currency mismatch: the currency of the account is %s while the currency of the transfer is %s", accountID, account.Currency, currency)
+		err := fmt.Errorf("account [%d] currency mismatch: the currency of the account is %s while the currency of the transfer is %s", accountID, account.Currency, currency)
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return false
 	}

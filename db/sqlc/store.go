@@ -90,7 +90,6 @@ func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 			return err
 		}
 
-		// TODO Update Money w/o being trapped in deadlocks
 		result.FromAccount, result.ToAccount, err = TransferMoney(ctx, q, arg.FromAccountID, arg.ToAccountID, arg.Amount)
 		
 		if err != nil {
