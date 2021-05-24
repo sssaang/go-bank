@@ -160,7 +160,7 @@ func TestMakeTransfer(t *testing.T){
 				"from_account_id": account1.ID,
 				"to_account_id":   account2.ID,
 				"amount":          amount,
-				"currency":        util.USD,
+				"currency":        account1.Currency,
 			},
 			buildStubs: func(store *testdb.MockStore) {
 				store.EXPECT().
@@ -181,7 +181,7 @@ func TestMakeTransfer(t *testing.T){
 				"from_account_id": account1.ID,
 				"to_account_id":   account2.ID,
 				"amount":          amount,
-				"currency":        util.USD,
+				"currency":        account1.Currency,
 			},
 			buildStubs: func(store *testdb.MockStore) {
 				store.EXPECT().
