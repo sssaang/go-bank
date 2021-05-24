@@ -12,6 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	db "github.com/sssaang/simplebank/db/sqlc"
 	testdb "github.com/sssaang/simplebank/db/test"
+	"github.com/sssaang/simplebank/db/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,6 +23,14 @@ func TestMakeTransfer(t *testing.T){
 	user2, _ := randomUser(t)
 	account2 := randomAccount(user2.Username)
 	account2.Currency = account1.Currency
+	user3, _ := randomUser(t)
+	account3 := randomAccount(user3.Username)
+	switch account1.Currency {
+	case util.USD, util.KRW: 
+		account3.Currency = util.EUR
+	case util.EUR:
+		account3.Currency = util.USD
+	}
 
 	testCases := []struct {
 		name string
@@ -61,7 +70,7 @@ func TestMakeTransfer(t *testing.T){
 			},
 		},
 		{
-			name: "Invalid Account ID",
+			name: "Non-existent Account ID",
 			body: gin.H {
 				"from_account_id": account1.ID,
 				"to_account_id": account2.ID,
@@ -81,6 +90,52 @@ func TestMakeTransfer(t *testing.T){
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name: "Currency Mismatch",
+			body: gin.H {
+				"from_account_id": account1.ID,
+				"to_account_id": account3.ID,
+				"amount": amount,
+				"currency": account1.Currency,
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				GetAccount(gomock.Any(), gomock.Eq(account1.ID)).
+				Times(1).Return(account1, nil)
+				
+				store.EXPECT().
+				GetAccount(gomock.Any(), gomock.Eq(account3.ID)).
+				Times(1).Return(account3, nil)
+
+				store.EXPECT().TransferTx(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "Invalid Currency",
+			body: gin.H {
+				"from_account_id": account1.ID,
+				"to_account_id": account2.ID,
+				"amount": amount,
+				"currency": "Invalid Currency",
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				GetAccount(gomock.Any(), gomock.Eq(account1.ID)).
+				Times(0)
+				
+				store.EXPECT().
+				GetAccount(gomock.Any(), gomock.Eq(account2.ID)).
+				Times(0)
+
+				store.EXPECT().TransferTx(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 	}
