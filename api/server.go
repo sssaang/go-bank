@@ -7,23 +7,26 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	db "github.com/sssaang/simplebank/db/sqlc"
+	"github.com/sssaang/simplebank/db/util"
 	"github.com/sssaang/simplebank/token"
 )
 
 type Server struct {
+	config util.Config
 	store  db.Store
 	tokenManager token.TokenManager
 	router *gin.Engine
 }
 
 // NewServer creates a new HTTP server, setup routing and return the server
-func NewServer(store db.Store) (*Server, error) {
-	tokenManager, err := token.NewPasetoManager("")
+func NewServer(config util.Config, store db.Store) (*Server, error) {
+	tokenManager, err := token.NewPasetoManager(config.PasetoSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token manager %w", err)
 	}
 
 	server := &Server{
+		config: config,
 		store: store,
 		tokenManager: tokenManager,
 	}
