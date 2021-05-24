@@ -1,20 +1,32 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	db "github.com/sssaang/simplebank/db/sqlc"
+	"github.com/sssaang/simplebank/token"
 )
 
 type Server struct {
 	store  db.Store
+	tokenManager token.TokenManager
 	router *gin.Engine
 }
 
 // NewServer creates a new HTTP server, setup routing and return the server
-func NewServer(store db.Store) *Server {
-	server := &Server{store: store}
+func NewServer(store db.Store) (*Server, error) {
+	tokenManager, err := token.NewPasetoManager("")
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token manager %w", err)
+	}
+
+	server := &Server{
+		store: store,
+		tokenManager: tokenManager,
+	}
 	router := gin.Default()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -30,7 +42,7 @@ func NewServer(store db.Store) *Server {
 	router.POST("/transfer", server.createTransfer)
 
 	server.router = router
-	return server
+	return server, nil
 }
 
 // Starts to run the HTTP server on a specific address
