@@ -52,6 +52,7 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 
 	router.POST("/user", server.createUser)
 	router.GET("/user/:username", server.getUser)
+	router.POST("/login", server.loginUser)
 	router.POST("/account", server.createAccount)
 	router.GET("/account/:id", server.getAccount)
 	router.GET("/accounts", server.listAccounts)
