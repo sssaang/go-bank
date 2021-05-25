@@ -15,7 +15,7 @@ const (
 	AUTHORIZATION_PAYLOAD = "authorization_payload"
 )
 
-func authMiddleware(manager token.TokenManager) gin.HandlerFunc {
+func authMiddleware(tokenManager token.TokenManager) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authorizationHeader := ctx.GetHeader(AUTHORIZATION_HEADER)
 		if len(authorizationHeader) == 0 {
@@ -39,7 +39,7 @@ func authMiddleware(manager token.TokenManager) gin.HandlerFunc {
 		}
 
 		accessToken := fields[1]
-		payload, err := manager.VerifyToken(accessToken)
+		payload, err := tokenManager.VerifyToken(accessToken)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 			return
