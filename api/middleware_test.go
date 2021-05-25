@@ -24,7 +24,7 @@ func addAuthorization(
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
-	authorizationHeader := fmt.Sprintf("%s %s", AUTHORIZATION_TYPE_BEARER, token)
+	authorizationHeader := fmt.Sprintf("%s %s", authorization_type, token)
 	request.Header.Set(AUTHORIZATION_HEADER, authorizationHeader)
 }
 
@@ -33,7 +33,61 @@ func TestAuthMiddleware(t *testing.T) {
 		name string
 		setupAuth func(t *testing.T, request *http.Request, tokenManager token.TokenManager)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
-	}{}
+	}{	
+		{
+			name: "Authorization Success",
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager) {
+				addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "test_user", time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "No Authorization Header",
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager) {
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
+			name: "Invalid Authorization Header",
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager) {
+				addAuthorization(t, request, tokenManager, "", "test_user", time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
+			name: "Unsupported Authorization",
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager) {
+				addAuthorization(t, request, tokenManager, "unsupported auth type", "test_user", time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
+			name: "Expired Authorization Token",
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager) {
+				addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "test_user", -time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
+			name: "InvalidAuthorizationFormat",
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager) {
+				addAuthorization(t, request, tokenManager, "", "user", time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -48,7 +102,7 @@ func TestAuthMiddleware(t *testing.T) {
 			)
 
 			recorder := httptest.NewRecorder()
-			request, err := http.NewRequest(http.MethodGet, "auth", nil)
+			request, err := http.NewRequest(http.MethodGet, "/auth", nil)
 			require.NoError(t, err)
 
 			tc.setupAuth(t, request, server.tokenManager)
