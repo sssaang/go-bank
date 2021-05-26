@@ -205,6 +205,35 @@ func TestGetAccountAPI(t *testing.T) {
 					require.Equal(t, http.StatusBadRequest, recorder.Code)
 				},
 			},
+			{
+				name: "Unauthorized User",
+				accountID: account.ID,
+				setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "unauthorized_user", time.Minute)
+				},
+				buildStubs: func(store *testdb.MockStore) {
+					store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Any()).
+					Times(1)
+				},
+				checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+					require.Equal(t, http.StatusUnauthorized, recorder.Code)
+				},
+			},
+			{
+				name: "No authorization",
+				accountID: account.ID,
+				setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+				},
+				buildStubs: func(store *testdb.MockStore) {
+					store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Any()).
+					Times(0)
+				},
+				checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+					require.Equal(t, http.StatusUnauthorized, recorder.Code)
+				},
+			},
 	}
 
 	for i := range testCases {
