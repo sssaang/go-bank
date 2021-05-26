@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
@@ -16,6 +17,7 @@ import (
 	db "github.com/sssaang/simplebank/db/sqlc"
 	testdb "github.com/sssaang/simplebank/db/test"
 	"github.com/sssaang/simplebank/db/util"
+	"github.com/sssaang/simplebank/token"
 	"github.com/stretchr/testify/require"
 )
 
@@ -135,12 +137,16 @@ func TestGetAccountAPI(t *testing.T) {
 	testCases := []struct {
 		name string
 		accountID int64
+		setupAuth func(t *testing.T, request *http.Request, tokenManager token.TokenManager)
 		buildStubs func(store *testdb.MockStore)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	} {
 			{
 				name: "Get an existing account",
 				accountID: account.ID,
+				setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "test_user", time.Minute)
+				},
 				buildStubs: func(store *testdb.MockStore) {
 					store.EXPECT().
 					GetAccount(gomock.Any(), gomock.Eq(account.ID)).
@@ -155,6 +161,9 @@ func TestGetAccountAPI(t *testing.T) {
 			{
 				name: "Get an account that does not exist",
 				accountID: account.ID,
+				setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "test_user", time.Minute)
+				},
 				buildStubs: func(store *testdb.MockStore) {
 					store.EXPECT().
 					GetAccount(gomock.Any(), gomock.Eq(account.ID)).
@@ -168,6 +177,9 @@ func TestGetAccountAPI(t *testing.T) {
 			{
 				name: "Connection Error",
 				accountID: account.ID,
+				setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "test_user", time.Minute)
+				},
 				buildStubs: func(store *testdb.MockStore) {
 					store.EXPECT().
 					GetAccount(gomock.Any(), gomock.Eq(account.ID)).
@@ -181,6 +193,9 @@ func TestGetAccountAPI(t *testing.T) {
 			{
 				name: "Invalid ID",
 				accountID: -12,
+				setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "test_user", time.Minute)
+				},
 				buildStubs: func(store *testdb.MockStore) {
 					store.EXPECT().
 					GetAccount(gomock.Any(), gomock.Any()).
@@ -209,6 +224,7 @@ func TestGetAccountAPI(t *testing.T) {
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
+			tc.setupAuth(t, request, server.tokenManager)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
