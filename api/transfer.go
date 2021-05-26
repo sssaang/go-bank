@@ -2,11 +2,13 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/sssaang/simplebank/db/sqlc"
+	"github.com/sssaang/simplebank/token"
 )
 
 
@@ -26,8 +28,20 @@ func (server *Server) makeTransfer(ctx *gin.Context) {
 
 	// check if the the account has the same currency
 
-	if !server.validAccount(ctx, req.FromAccountID, req.Currency) ||
-	!server.validAccount(ctx, req.ToAccountID, req.Currency) {
+	fromAccount, isValid := server.validAccount(ctx, req.FromAccountID, req.Currency)
+	if !isValid {
+		return
+	}
+
+	authPayload := ctx.MustGet(AUTHORIZATION_PAYLOAD).(*token.Payload)
+	if fromAccount.Owner != authPayload.Username {
+		return
+	}
+
+	_, isValid = server.validAccount(ctx, req.ToAccountID, req.Currency) 
+	if !isValid {
+		err := errors.New("the user has no access to the from account")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
@@ -46,23 +60,23 @@ func (server *Server) makeTransfer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency string) bool {
+func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency string) (db.Account, bool) {
 	account, err := server.store.GetAccount(ctx, accountID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return false
+			return db.Account{}, false
 		}
 
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return false
+		return db.Account{}, false
 	}
 
 	if account.Currency != currency {
 		err := fmt.Errorf("account [%d] currency mismatch: the currency of the account is %s while the currency of the transfer is %s", accountID, account.Currency, currency)
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return false
+		return db.Account{}, false
 	}
 
-	return true
+	return account, true
 }
