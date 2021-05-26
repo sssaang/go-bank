@@ -145,7 +145,7 @@ func TestGetAccountAPI(t *testing.T) {
 				name: "Get an existing account",
 				accountID: account.ID,
 				setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
-					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "test_user", time.Minute)
+					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, user.Username, time.Minute)
 				},
 				buildStubs: func(store *testdb.MockStore) {
 					store.EXPECT().
@@ -162,7 +162,7 @@ func TestGetAccountAPI(t *testing.T) {
 				name: "Get an account that does not exist",
 				accountID: account.ID,
 				setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
-					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "test_user", time.Minute)
+					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, user.Username, time.Minute)
 				},
 				buildStubs: func(store *testdb.MockStore) {
 					store.EXPECT().
@@ -178,7 +178,7 @@ func TestGetAccountAPI(t *testing.T) {
 				name: "Connection Error",
 				accountID: account.ID,
 				setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
-					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "test_user", time.Minute)
+					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, user.Username, time.Minute)
 				},
 				buildStubs: func(store *testdb.MockStore) {
 					store.EXPECT().
@@ -194,7 +194,7 @@ func TestGetAccountAPI(t *testing.T) {
 				name: "Invalid ID",
 				accountID: -12,
 				setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
-					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "test_user", time.Minute)
+					addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, user.Username, time.Minute)
 				},
 				buildStubs: func(store *testdb.MockStore) {
 					store.EXPECT().
