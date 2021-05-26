@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/lib/pq"
 	db "github.com/sssaang/simplebank/db/sqlc"
 	"github.com/sssaang/simplebank/db/util"
+	"github.com/sssaang/simplebank/token"
 )
 
 
@@ -79,6 +81,12 @@ func (server *Server) getUser(ctx *gin.Context) {
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
+	}
+
+	authPayload := ctx.MustGet(AUTHORIZATION_PAYLOAD).(*token.Payload)
+	if req.Username != authPayload.Username {
+		err := errors.New("the user has no access to the information of the requested user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 	}
 
 	user, err := server.store.GetUser(ctx, req.Username)
