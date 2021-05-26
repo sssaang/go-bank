@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -66,6 +67,14 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return 
 	}
+	
+	authPayload := ctx.MustGet(AUTHORIZATION_PAYLOAD).(*token.Payload)
+	if account.Owner != authPayload.Username {
+		err := errors.New("the user has no access to the account")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
 
 	ctx.JSON(http.StatusOK, account)
 }
