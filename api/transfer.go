@@ -35,13 +35,13 @@ func (server *Server) makeTransfer(ctx *gin.Context) {
 
 	authPayload := ctx.MustGet(AUTHORIZATION_PAYLOAD).(*token.Payload)
 	if fromAccount.Owner != authPayload.Username {
+		err := errors.New("the user has no access to the from account")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
 	_, isValid = server.validAccount(ctx, req.ToAccountID, req.Currency) 
 	if !isValid {
-		err := errors.New("the user has no access to the from account")
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 

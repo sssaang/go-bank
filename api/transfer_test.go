@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	db "github.com/sssaang/simplebank/db/sqlc"
 	testdb "github.com/sssaang/simplebank/db/test"
 	"github.com/sssaang/simplebank/db/util"
+	"github.com/sssaang/simplebank/token"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,6 +37,7 @@ func TestMakeTransfer(t *testing.T){
 	testCases := []struct {
 		name string
 		body gin.H
+		setupAuth func(t *testing.T, request *http.Request, tokenManager token.TokenManager)
 		buildStubs func(store *testdb.MockStore)
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
@@ -45,6 +48,9 @@ func TestMakeTransfer(t *testing.T){
 				"to_account_id": account2.ID,
 				"amount": amount,
 				"currency": account1.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+				addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, user1.Username, time.Minute)
 			},
 			buildStubs: func(store *testdb.MockStore) {
 				store.EXPECT().
@@ -70,35 +76,15 @@ func TestMakeTransfer(t *testing.T){
 			},
 		},
 		{
-			name: "Non-existent Account ID",
-			body: gin.H {
-				"from_account_id": account1.ID,
-				"to_account_id": account2.ID,
-				"amount": amount,
-				"currency": account1.Currency,
-			},
-			buildStubs: func(store *testdb.MockStore) {
-				store.EXPECT().
-				GetAccount(gomock.Any(), gomock.Any()).
-				Times(1).Return(account1, nil)
-				
-				store.EXPECT().
-				GetAccount(gomock.Any(), gomock.Eq(account2.ID)).
-				Times(1).Return(db.Account{}, sql.ErrNoRows)
-
-				store.EXPECT().TransferTx(gomock.Any(), gomock.Any()).Times(0)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusNotFound, recorder.Code)
-			},
-		},
-		{
 			name: "Currency Mismatch",
 			body: gin.H {
 				"from_account_id": account1.ID,
 				"to_account_id": account3.ID,
 				"amount": amount,
 				"currency": account1.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+				addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, user1.Username, time.Minute)
 			},
 			buildStubs: func(store *testdb.MockStore) {
 				store.EXPECT().
@@ -123,6 +109,9 @@ func TestMakeTransfer(t *testing.T){
 				"amount": amount,
 				"currency": "Invalid Currency",
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+				addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, user1.Username, time.Minute)
+			},
 			buildStubs: func(store *testdb.MockStore) {
 				store.EXPECT().
 				GetAccount(gomock.Any(), gomock.Eq(account1.ID)).
@@ -146,6 +135,9 @@ func TestMakeTransfer(t *testing.T){
 				"amount":          -amount,
 				"currency":        account1.Currency,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+				addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, user1.Username, time.Minute)
+			},
 			buildStubs: func(store *testdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Times(0)
 				store.EXPECT().TransferTx(gomock.Any(), gomock.Any()).Times(0)
@@ -161,6 +153,9 @@ func TestMakeTransfer(t *testing.T){
 				"to_account_id":   account2.ID,
 				"amount":          amount,
 				"currency":        account1.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+				addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, user1.Username, time.Minute)
 			},
 			buildStubs: func(store *testdb.MockStore) {
 				store.EXPECT().
@@ -183,6 +178,9 @@ func TestMakeTransfer(t *testing.T){
 				"amount":          amount,
 				"currency":        account1.Currency,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+				addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, user1.Username, time.Minute)
+			},
 			buildStubs: func(store *testdb.MockStore) {
 				store.EXPECT().
 				GetAccount(gomock.Any(), gomock.Eq(account1.ID)).
@@ -198,6 +196,57 @@ func TestMakeTransfer(t *testing.T){
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "Unauthorized user transfer",
+			body: gin.H {
+				"from_account_id": account1.ID,
+				"to_account_id": account2.ID,
+				"amount": amount,
+				"currency": account1.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+				addAuthorization(t, request, tokenManager, AUTHORIZATION_TYPE_BEARER, "asdf", time.Minute)
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				GetAccount(gomock.Any(), gomock.Any()).
+				Times(1).Return(account1, nil)
+				
+				store.EXPECT().
+				GetAccount(gomock.Any(), gomock.Eq(account2.ID)).
+				Times(0)
+
+				store.EXPECT().TransferTx(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
+			name: "No Authorization",
+			body: gin.H {
+				"from_account_id": account1.ID,
+				"to_account_id": account2.ID,
+				"amount": amount,
+				"currency": account1.Currency,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenManager token.TokenManager){
+			},
+			buildStubs: func(store *testdb.MockStore) {
+				store.EXPECT().
+				GetAccount(gomock.Any(), gomock.Any()).
+				Times(0)
+				
+				store.EXPECT().
+				GetAccount(gomock.Any(), gomock.Eq(account2.ID)).
+				Times(0)
+
+				store.EXPECT().TransferTx(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
 	}
@@ -219,6 +268,7 @@ func TestMakeTransfer(t *testing.T){
 			request, err := http.NewRequest(http.MethodPost, "/transfer", bytes.NewReader(data))
 			require.NoError(t, err)
 
+			tc.setupAuth(t, request, server.tokenManager)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder)
 		})
